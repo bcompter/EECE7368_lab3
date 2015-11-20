@@ -5,12 +5,14 @@
 //
 #include <stdio.h>
 #include <stdlib.h>
+#include <sim.sh>
 #include "digicam.sh"
 
 import "i_send";
 
 behavior Stimulus(unsigned char ScanBuffer[IMG_HEIGHT_MDU*8][IMG_WIDTH_MDU*8],
-                  i_send start){
+                  i_send start,
+                  unsigned long long startTime){
   typedef short WORD;
   typedef long DWORD;
   typedef char BYTE;
@@ -215,14 +217,22 @@ behavior Stimulus(unsigned char ScanBuffer[IMG_HEIGHT_MDU*8][IMG_WIDTH_MDU*8],
 
   // read BMP image from file "ccd.bmp" and store it into ScanBuffer
   // 
-  void main(void){
+  void main(void)
+  {
     unsigned int i, r;
     unsigned int mduwide, mduhigh;
     unsigned int imagewidth, imageheight;
 
+	// Loop over all frames
+	int frames = 0;
+	for (frames = 0; frames < NUM_FRAMES; frames++)
+	{
+		printf("STIMULUS::Processing Frame %d\n", frames);
+	
     // Open file
     ifp = fopen("ccd.bmp", "rb");
-    if (!ifp) {
+    	if (!ifp) 
+    	{
       fprintf(stderr, "Cannot open input file %s\n", "ccd.bmp");
       exit(1);
     }
@@ -238,36 +248,42 @@ behavior Stimulus(unsigned char ScanBuffer[IMG_HEIGHT_MDU*8][IMG_WIDTH_MDU*8],
     mduhigh = MDU(imageheight);
   
     // Loop over rows
-    for (r = 0; r < (unsigned int) BmpInfoHeader.biHeight; r++) {
+    	for (r = 0; r < (unsigned int) BmpInfoHeader.biHeight; r++) 
+    	{
       // Position file pointer to corresponding row
       fseek (ifp, BmpFileHeader.bfOffBits 
              + (BmpInfoHeader.biHeight - r - 1) * BmpScanWidth, 0);
         
       // Read pixel row, throw error on unexpected end of file, and bitwidth
-      if (ferror(ifp) || 
-          (fread(ScanBuffer[r], 1, BmpInfoHeader.biWidth, ifp) 
-           !=  (unsigned int) BmpInfoHeader.biWidth)){
+      		if (ferror(ifp) || (fread(ScanBuffer[r], 1, BmpInfoHeader.biWidth, ifp) 
+           		!=  (unsigned int) BmpInfoHeader.biWidth))
+           	{
         fprintf(stderr, "Error reading data from file %s\n", "ccd.bmp");
         fclose (ifp);
         exit(1);
       }
 
       // fill remaining overhang pixels by copying last pixels 
-      for(i = BmpInfoHeader.biWidth; 
-          i <  (unsigned int) MDU(BmpInfoHeader.biWidth) * 8; i++) {
+      		for(i = BmpInfoHeader.biWidth; i <  (unsigned int) MDU(BmpInfoHeader.biWidth) * 8; i++) 
+      		{
         ScanBuffer[r][i] = ScanBuffer[r][BmpInfoHeader.biWidth-1];
       }
     }
     
     fclose (ifp);
 
+		// Frame buffer is loaded, Start frame encoding
     start.send();
+    	startTime = now();
+    	
+    	// Simulate 5 frames per second by using a waitfor command
+    	waitfor(200 MILLI_SEC);
+
+	}  // end for each frame???
 
     // return the number of 8x8 blocks to be processed
     // no longer needed due to static dimensions
     return;
   }
 
-  
-
-};
+};  // end behavior

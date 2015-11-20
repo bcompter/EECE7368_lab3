@@ -1,72 +1,51 @@
 // Digital Camera Example
 //
-// Lab 2
+// Lab 3
 // Group Members: 
-//   <login name>, <student id>
+//   Brian Compter, 001986259
 //
 //
-
 
 #include <stdio.h>
+#include <sim.sh>
 #include "digicam.sh"
 
 import "stimulus";
-import "read";
-import "dct";
-import "quantize";
-import "huff";
+import "design";
 import "monitor";
 
 import "c_queue";
 import "c_handshake";
+import "c_double_handshake";
 
+behavior Main 
+{  
+	// Scan buffer from our file reader
+  	unsigned char ScanBuffer[IMG_HEIGHT_MDU*8][IMG_WIDTH_MDU*8];
 
-behavior JpegEncoder(unsigned char ScanBuffer[IMG_HEIGHT_MDU*8][IMG_WIDTH_MDU*8], 
-                i_receive start, i_sender bytes) {
-
-  int read2dct[64];
-  int dct2quant[64];
-  int quant2huff[64];
-
-  Read read(ScanBuffer, read2dct);
-  DCT dct(read2dct, dct2quant);
-  Quantize quantize(dct2quant, quant2huff);
-  Huff  huff(quant2huff, bytes);
-  
-  void main(void) {
-    int iter;
-    
-    while(1) {
-      start.receive();
-      for (iter = 0; iter < IMG_BLOCKS; iter++) {
-        read;
-        dct;
-        quantize;
-        huff;
-      }
-    }
-  }
-};
-
-behavior Main {  
-  unsigned char ScanBuffer[IMG_HEIGHT_MDU*8][IMG_WIDTH_MDU*8];
+  	// Trigger Read to start
   c_handshake start;
-  const unsigned long qSize = 512;
-  c_queue bytes(qSize);
 
-  Stimulus stimulus(ScanBuffer, start);
-  JpegEncoder jpegEncoder(ScanBuffer, start, bytes);
-  Monitor monitor(bytes);
+	// Handshake to the monitor to deliver the finished data
+  	c_double_handshake bytesToMonitor;
 
-  int main(void) {
+  	// Timing variables
+  	unsigned long long startTime;
 
-    par{
+  	Stimulus stimulus(ScanBuffer, start, startTime);
+	Design design(ScanBuffer, start, bytesToMonitor);
+  	Monitor monitor(bytesToMonitor, startTime);
+
+  // Main application entry point
+  int main(void) 
+  {
+    par
+    {
       stimulus;
-      jpegEncoder;
+      	design;
       monitor;
-
-    };
+    }
 
     return 0;
-  }
-};
+  }  // end int main void
+};  // end behavior

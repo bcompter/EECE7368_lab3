@@ -18,4 +18,7 @@
 // total number of blocks in image
 #define IMG_BLOCKS (IMG_WIDTH_MDU * IMG_HEIGHT_MDU)
 
+// The number of frames to process
+#define NUM_FRAMES 3
+
 #endif

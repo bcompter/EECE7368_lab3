@@ -3,8 +3,8 @@
 //
 //
 //
-
-
+#include <stdio.h>
+#include <sim.sh>
 #include "digicam.sh"
 import "i_sender";
 
@@ -571,15 +571,24 @@ behavior Huffencode(in int in_block[64], i_sender file ){
       WriteMarker(0xd9);
     }
 
-
     // flush the local buffer into queue
-    file.send(ofp, ofp_ptr); 
+    //printf("HUFFENCODE:: Writing block, %d bytes.\n", ofp_ptr);
+    file.send(&ofp[0], ofp_ptr); 
+
+    //waitfor(1 MILLI_SEC);
     
-    // reset the byte counter (fill level of local buffer
+    // reset the byte counter (fill level of local buffer)
     ofp_ptr = 0;
 
     // next block 
     blockNr++;
+    
+    // Check for start of a new block
+    if (blockNr > 179)
+    {
+    	blockNr = 0;
+    	LastDC = 0;
+    }
   }
 
 
